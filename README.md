@@ -69,27 +69,43 @@ sudo apt-get install:
 
 
     # Linux Kernel .config modifications for biology workloads
-CONFIG_HUGEPAGE=y                    # Large pages for genomics
+CONFIG_HUGEPAGE=y                    
+# Large pages for genomics
 CONFIG_TRANSPARENT_HUGEPAGE=y
-CONFIG_MEMORY_HOTPLUG=y              # For memory expansion
-CONFIG_NUMA=y                        # NUMA optimization
-CONFIG_CPU_FREQ_GOV_PERFORMANCE=y    # Max CPU performance
-CONFIG_SCHED_AUTOGROUP=y             # Process grouping
-CONFIG_CGROUPS=y                     # Resource limits
-CONFIG_BLK_DEV_NVME=y                # NVMe SSD support
-CONFIG_RDMA=y                        # Remote DMA for clusters
-CONFIG_GPU=y                         # GPU acceleration
-CONFIG_BPF=y                         # eBPF for monitoring
-CONFIG_FTRACE=y                      # Tracing for debugging
+CONFIG_MEMORY_HOTPLUG=y             
+# For memory expansion
+CONFIG_NUMA=y                       
+# NUMA optimization
+CONFIG_CPU_FREQ_GOV_PERFORMANCE=y    
+# Max CPU performance
+CONFIG_SCHED_AUTOGROUP=y            
+# Process grouping
+CONFIG_CGROUPS=y                     
+# Resource limits
+CONFIG_BLK_DEV_NVME=y               
+# NVMe SSD support
+CONFIG_RDMA=y                        
+# Remote DMA for clusters
+CONFIG_GPU=y                         
+# GPU acceleration
+CONFIG_BPF=y                         
+# eBPF for monitoring
+CONFIG_FTRACE=y                      
+# Tracing for debugging
 
 # File system optimizations
-CONFIG_BTRFS_FS=y                    # Copy-on-write for data
-CONFIG_XFS_FS=y                      # High-performance FS
-CONFIG_OVERLAY_FS=y                  # For containers
-CONFIG_FUSE_FS=y                     # User-space filesystems
+CONFIG_BTRFS_FS=y                    
+# Copy-on-write for data
+CONFIG_XFS_FS=y                      
+# High-performance FS
+CONFIG_OVERLAY_FS=y                 
+# For containers
+CONFIG_FUSE_FS=y                    
+# User-space filesystems
 
 # Real-time extensions (for instrument control)
-CONFIG_PREEMPT_RT=y                  # Real-time kernel
+CONFIG_PREEMPT_RT=y                  
+# Real-time kernel
 CONFIG_HIGH_RES_TIMERS=y
 CONFIG_NO_HZ_FULL=y
 
