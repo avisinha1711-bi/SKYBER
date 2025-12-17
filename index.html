@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Fast Bubble Shooter</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            touch-action: manipulation;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: white;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+        }
+        
+        .screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            max-width: 500px;
+            height: 90vh;
+        }
+        
+        #startScreen {
+            text-align: center;
+        }
+        
+        #gameScreen {
+            display: none;
+        }
+        
+        #gameOverScreen {
+            display: none;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            color: #4cc9f0;
+            margin-bottom: 20px;
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+        }
+        
+        h2 {
+            font-size: 2rem;
+            color: #f72585;
+            margin-bottom: 15px;
+        }
+        
+        p {
+            font-size: 1.1rem;
+            color: #b8c1ec;
+            margin-bottom: 25px;
+            max-width: 400px;
+            line-height: 1.5;
+        }
+        
+        .game-container {
+            width: 100%;
+            height: 80vh;
+            max-height: 600px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+            border: 3px solid #4361ee;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+        }
+        
+        #gameCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        
+        .score-board {
+            position: absolute;
+            top: 15px;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 20px;
+            font-size: 1.3rem;
+            font-weight: bold;
+            z-index: 10;
+        }
+        
+        .score-item {
+            background: rgba(0, 0, 0, 0.6);
+            padding: 8px 15px;
+            border-radius: 20px;
+            color: #ffd166;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4);
+        }
+        
+        .gun {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 40px;
+            background: #4cc9f0;
+            border-radius: 10px 10px 0 0;
+            z-index: 5;
+            cursor: grab;
+            user-select: none;
+            box-shadow: 0 0 10px rgba(76, 201, 240, 0.7);
+        }
+        
+        .gun:active {
+            cursor: grabbing;
+        }
+        
+        .gun-barrel {
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 10px;
+            height: 30px;
+            background: #3a86ff;
+            border-radius: 5px;
+        }
+        
+        .btn {
+            padding: 15px 40px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            margin-top: 20px;
+            background: linear-gradient(to right, #4361ee, #3a0ca3);
+            color: white;
+            min-width: 180px;
+        }
+        
+        .btn:hover, .btn:active {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+            background: linear-gradient(to right, #3a0ca3, #4361ee);
+        }
+        
+        .btn:active {
+            transform: translateY(-1px);
+        }
+        
+        .controls-info {
+            margin-top: 20px;
+            font-size: 1rem;
+            color: #b8c1ec;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px 20px;
+            border-radius: 10px;
+            max-width: 400px;
+        }
+        
+        .game-over-score {
+            font-size: 2.5rem;
+            color: #ffd166;
+            margin: 20px 0;
+            text-shadow: 0 0 10px rgba(255, 209, 102, 0.7);
+        }
+        
+        .speed-warning {
+            position: absolute;
+            bottom: 70px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 1rem;
+            color: #ff9e00;
+            z-index: 10;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 5px;
+            display: none;
+        }
+        
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 2rem;
+            }
+            
+            h2 {
+                font-size: 1.7rem;
+            }
+            
+            .game-container {
+                height: 70vh;
+            }
+            
+            .score-board {
+                font-size: 1.1rem;
+                padding: 0 15px;
+            }
+            
+            .btn {
+                padding: 12px 30px;
+                font-size: 1.1rem;
+                min-width: 160px;
+            }
+            
+            .gun {
+                width: 50px;
+                height: 35px;
+            }
+        }
+        
+        @media (max-width: 400px) {
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            h2 {
+                font-size: 1.5rem;
+            }
+            
+            .btn {
+                padding: 10px 25px;
+                font-size: 1rem;
+                min-width: 140px;
+            }
+            
+            .score-board {
+                font-size: 1rem;
+                padding: 0 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Start Screen -->
+    <div class="screen" id="startScreen">
+        <h1>Fast Bubble Shooter</h1>
+        <p>Drag the gun to shoot falling bubbles. Score 20 points per bubble. Speed increases every 7 seconds! Can you survive the rapid speed increase?</p>
+        <button class="btn" id="startBtn">START GAME</button>
+        <div class="controls-info">
+            <p>Drag the blue gun at the bottom to move it left and right</p>
+        </div>
+    </div>
+    
+    <!-- Game Screen -->
+    <div class="screen" id="gameScreen">
+        <div class="game-container">
+            <div class="score-board">
+                <div class="score-item">SCORE: <span id="score">0</span></div>
+                <div class="score-item">SPEED: <span id="speedLevel">1</span>x</div>
+                <div class="score-item">TIME: <span id="time">7</span>s</div>
+            </div>
+            
+            <canvas id="gameCanvas"></canvas>
+            
+            <div class="speed-warning" id="speedWarning"></div>
+            
+            <div class="gun" id="gun">
+                <div class="gun-barrel"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Game Over Screen -->
+    <div class="screen" id="gameOverScreen">
+        <h2>GAME OVER</h2>
+        <p>Bubbles reached the bottom!</p>
+        <div class="game-over-score">Score: <span id="finalScore">0</span></div>
+        <div class="controls-info" style="margin-top: 10px;">
+            <p>Final Speed Level: <span id="finalSpeedLevel">1</span>x</p>
+        </div>
+        <button class="btn" id="restartBtn">PLAY AGAIN</button>
+    </div>
+
+    <script>
+        // Game elements
+        const startScreen = document.getElementById('startScreen');
+        const gameScreen = document.getElementById('gameScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const startBtn = document.getElementById('startBtn');
+        const restartBtn = document.getElementById('restartBtn');
+        const scoreElement = document.getElementById('score');
+        const speedLevelElement = document.getElementById('speedLevel');
+        const timeElement = document.getElementById('time');
+        const finalScoreElement = document.getElementById('finalScore');
+        const finalSpeedLevelElement = document.getElementById('finalSpeedLevel');
+        const speedWarningElement = document.getElementById('speedWarning');
+        const gunElement = document.getElementById('gun');
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Game variables
+        let score = 0;
+        let speedIncreaseTimer = 7; // Changed to 7 seconds
+        let speedLevel = 1;
+        let gameActive = false;
+        let gameLoopId;
+        let speedTimerId;
+        let gunX = 0;
+        let isDragging = false;
+        let flashEffect = false;
+        let flashCounter = 0;
+        
+        // Speed configuration - Adjusted for faster pace
+        const BASE_SPEED = 1.0;
+        const SPEED_INCREASE_RATE = 0.3; // Smaller increase but more frequent
+        const SPEED_INTERVAL = 7; // Speed increases every 7 seconds
+        const MAX_BUBBLES = 15; // Maximum bubbles on screen
+        
+        // Arrays for game objects
+        let bullets = [];
+        let bubbles = [];
+        
+        // Set canvas size
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+        }
+        
+        // Initialize game
+        function initGame() {
+            resizeCanvas();
+            
+            // Set initial gun position
+            gunX = canvas.width / 2;
+            updateGunPosition();
+            
+            // Reset game state
+            score = 0;
+            speedIncreaseTimer = SPEED_INTERVAL;
+            speedLevel = 1;
+            bullets = [];
+            bubbles = [];
+            flashEffect = false;
+            
+            // Clear any warnings
+            speedWarningElement.textContent = '';
+            speedWarningElement.style.display = 'none';
+            
+            // Update UI
+            scoreElement.textContent = score;
+            speedLevelElement.textContent = speedLevel;
+            timeElement.textContent = speedIncreaseTimer;
+            
+            // Create initial bubbles
+            createBubble();
+            createBubble();
+        }
+        
+        // Start game
+        function startGame() {
+            startScreen.style.display = 'none';
+            gameScreen.style.display = 'flex';
+            gameOverScreen.style.display = 'none';
+            
+            initGame();
+            gameActive = true;
+            
+            // Start game loop
+            gameLoopId = requestAnimationFrame(gameLoop);
+            
+            // Start speed timer
+            speedTimerId = setInterval(() => {
+                if (gameActive) {
+                    speedIncreaseTimer--;
+                    timeElement.textContent = speedIncreaseTimer;
+                    
+                    // Flash warning when 3 seconds remaining
+                    if (speedIncreaseTimer <= 3 && speedIncreaseTimer > 0) {
+                        speedWarningElement.textContent = `Speed increase in ${speedIncreaseTimer}...`;
+                        speedWarningElement.style.display = 'block';
+                        speedWarningElement.style.color = '#ff9e00';
+                    }
+                    
+                    if (speedIncreaseTimer <= 0) {
+                        increaseSpeed();
+                        speedIncreaseTimer = SPEED_INTERVAL; // Reset timer
+                    }
+                }
+            }, 1000);
+            
+            // Setup gun dragging
+            setupGunDrag();
+        }
+        
+        // Increase ball speed
+        function increaseSpeed() {
+            speedLevel++;
+            speedLevelElement.textContent = speedLevel;
+            
+            // Update speed for existing bubbles
+            bubbles.forEach(bubble => {
+                bubble.speed += SPEED_INCREASE_RATE;
+            });
+            
+            // Show speed increase notification
+            speedWarningElement.textContent = `SPEED INCREASED! Level ${speedLevel}`;
+            speedWarningElement.style.color = '#f72585';
+            speedWarningElement.style.display = 'block';
+            
+            // Activate flash effect
+            flashEffect = true;
+            flashCounter = 0;
+            
+            // Hide notification after 1.5 seconds
+            setTimeout(() => {
+                speedWarningElement.style.display = 'none';
+            }, 1500);
+            
+            // Add more bubbles as speed increases (more aggressive)
+            const newBubblesToAdd = Math.min(2 + Math.floor(speedLevel / 3), 5);
+            for (let i = 0; i < newBubblesToAdd; i++) {
+                if (bubbles.length < MAX_BUBBLES) {
+                    createBubble();
+                }
+            }
+        }
+        
+        // Setup gun dragging
+        function setupGunDrag() {
+            let startX = 0;
+            let gunStartX = 0;
+            
+            // Mouse events
+            gunElement.addEventListener('mousedown', startDrag);
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('mouseup', stopDrag);
+            
+            // Touch events for mobile
+            gunElement.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                startDrag(e.touches[0]);
+            });
+            document.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                if (e.touches.length === 1) {
+                    drag(e.touches[0]);
+                }
+            });
+            document.addEventListener('touchend', stopDrag);
+            
+            function startDrag(e) {
+                isDragging = true;
+                startX = e.clientX;
+                gunStartX = gunX;
+                gunElement.style.cursor = 'grabbing';
+            }
+            
+            function drag(e) {
+                if (!isDragging || !gameActive) return;
+                
+                const currentX = e.clientX;
+                const deltaX = currentX - startX;
+                
+                // Calculate new gun position
+                let newX = gunStartX + deltaX;
+                
+                // Keep gun within canvas bounds
+                const gunWidth = gunElement.offsetWidth;
+                newX = Math.max(gunWidth/2, Math.min(canvas.width - gunWidth/2, newX));
+                
+                gunX = newX;
+                updateGunPosition();
+                
+                // Shoot automatically while dragging
+                shoot();
+            }
+            
+            function stopDrag() {
+                isDragging = false;
+                gunElement.style.cursor = 'grab';
+            }
+        }
+        
+        // Update gun position on screen
+        function updateGunPosition() {
+            gunElement.style.left = `${gunX - gunElement.offsetWidth/2}px`;
+        }
+        
+        // Create a new bubble
+        function createBubble() {
+            if (bubbles.length >= MAX_BUBBLES) return;
+            
+            const radius = 12 + Math.random() * 8; // Smaller size: 12-20px
+            const currentBaseSpeed = BASE_SPEED + (speedLevel - 1) * SPEED_INCREASE_RATE;
+            const speed = currentBaseSpeed + Math.random() * 0.3;
+            
+            bubbles.push({
+                x: Math.random() * (canvas.width - radius * 2) + radius,
+                y: -radius,
+                radius: radius,
+                speed: speed,
+                color: getRandomColor()
+            });
+        }
+        
+        // Get random color for bubbles
+        function getRandomColor() {
+            const colors = ['#ff595e', '#ffca3a', '#8ac926', '#1982c4', '#6a4c93'];
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+        
+        // Shoot a bullet
+        function shoot() {
+            if (!gameActive) return;
+            
+            bullets.push({
+                x: gunX,
+                y: canvas.height - 50,
+                radius: 5,
+                speed: 8,
+                color: '#ffd166'
+            });
+        }
+        
+        // Update game state
+        function update() {
+            if (!gameActive) return;
+            
+            // Update bullets
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                const bullet = bullets[i];
+                bullet.y -= bullet.speed;
+                
+                // Remove bullets that go off screen
+                if (bullet.y < -bullet.radius) {
+                    bullets.splice(i, 1);
+                    continue;
+                }
+                
+                // Check collision with bubbles
+                for (let j = bubbles.length - 1; j >= 0; j--) {
+                    const bubble = bubbles[j];
+                    const dx = bullet.x - bubble.x;
+                    const dy = bullet.y - bubble.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < bullet.radius + bubble.radius) {
+                        // Collision detected
+                        bullets.splice(i, 1);
+                        bubbles.splice(j, 1);
+                        
+                        // Increase score by 20 points
+                        score += 20;
+                        scoreElement.textContent = score;
+                        
+                        // Create new bubble
+                        createBubble();
+                        break;
+                    }
+                }
+            }
+            
+            // Update bubbles
+            for (let i = bubbles.length - 1; i >= 0; i--) {
+                const bubble = bubbles[i];
+                bubble.y += bubble.speed;
+                
+                // Check if bubble reached bottom
+                if (bubble.y > canvas.height - 10) {
+                    // Game over - bubble reached bottom
+                    gameOver();
+                    return;
+                }
+            }
+            
+            // More frequent bubble generation based on speed level
+            const spawnChance = 0.015 + (speedLevel * 0.005); // Increases with speed level
+            if (Math.random() < spawnChance && bubbles.length < MAX_BUBBLES) {
+                createBubble();
+            }
+            
+            // Update flash effect
+            if (flashEffect) {
+                flashCounter++;
+                if (flashCounter > 10) { // Flash lasts for 10 frames
+                    flashEffect = false;
+                }
+            }
+        }
+        
+        // Draw game objects
+        function draw() {
+            // Apply flash effect if active
+            if (flashEffect) {
+                const flashAlpha = 0.7 - (flashCounter * 0.07);
+                ctx.fillStyle = `rgba(247, 37, 133, ${flashAlpha})`;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            } else {
+                // Clear canvas with semi-transparent background for trail effect
+                ctx.fillStyle = 'rgba(26, 26, 46, 0.15)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+            
+            // Draw speed indicator background
+            drawSpeedIndicator();
+            
+            // Draw bubbles
+            bubbles.forEach(bubble => {
+                // Draw bubble glow for faster bubbles
+                if (bubble.speed > BASE_SPEED + 2) {
+                    const glowRadius = bubble.radius + 3;
+                    const gradient = ctx.createRadialGradient(
+                        bubble.x, bubble.y, bubble.radius,
+                        bubble.x, bubble.y, glowRadius
+                    );
+                    gradient.addColorStop(0, bubble.color);
+                    gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                    
+                    ctx.beginPath();
+                    ctx.arc(bubble.x, bubble.y, glowRadius, 0, Math.PI * 2);
+                    ctx.fillStyle = gradient;
+                    ctx.fill();
+                }
+                
+                // Draw bubble
+                ctx.beginPath();
+                ctx.arc(bubble.x, bubble.y, bubble.radius, 0, Math.PI * 2);
+                ctx.fillStyle = bubble.color;
+                ctx.fill();
+                
+                // Bubble shine effect
+                ctx.beginPath();
+                ctx.arc(bubble.x - bubble.radius * 0.3, bubble.y - bubble.radius * 0.3, bubble.radius * 0.2, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+                ctx.fill();
+                
+                // Bubble border
+                ctx.beginPath();
+                ctx.arc(bubble.x, bubble.y, bubble.radius, 0, Math.PI * 2);
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+            });
+            
+            // Draw bullets
+            bullets.forEach(bullet => {
+                ctx.beginPath();
+                ctx.arc(bullet.x, bullet.y, bullet.radius, 0, Math.PI * 2);
+                ctx.fillStyle = bullet.color;
+                ctx.fill();
+                
+                // Bullet glow
+                const gradient = ctx.createRadialGradient(
+                    bullet.x, bullet.y, 0,
+                    bullet.x, bullet.y, bullet.radius * 3
+                );
+                gradient.addColorStop(0, 'rgba(255, 209, 102, 0.8)');
+                gradient.addColorStop(1, 'rgba(255, 209, 102, 0)');
+                
+                ctx.beginPath();
+                ctx.arc(bullet.x, bullet.y, bullet.radius * 3, 0, Math.PI * 2);
+                ctx.fillStyle = gradient;
+                ctx.fill();
+            });
+            
+            // Draw bottom danger zone
+            drawDangerZone();
+        }
+        
+        // Draw speed indicator
+        function drawSpeedIndicator() {
+            // Draw speed level box
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            ctx.fillRect(canvas.width/2 - 60, 10, 120, 40);
+            
+            // Draw speed level text
+            ctx.font = 'bold 18px Arial';
+            ctx.fillStyle = '#4cc9f0';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(`SPEED: ${speedLevel}x`, canvas.width/2, 25);
+            
+            // Draw timer text
+            ctx.font = '14px Arial';
+            ctx.fillStyle = speedIncreaseTimer <= 3 ? '#ff9e00' : '#ffd166';
+            ctx.fillText(`Next: ${speedIncreaseTimer}s`, canvas.width/2, 40);
+            
+            // Draw speed timer progress bar
+            const progressWidth = 120;
+            const progressHeight = 6;
+            const progressX = canvas.width/2 - progressWidth/2;
+            const progressY = 50;
+            
+            // Background
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.fillRect(progressX, progressY, progressWidth, progressHeight);
+            
+            // Progress
+            const progress = (SPEED_INTERVAL - speedIncreaseTimer) / SPEED_INTERVAL;
+            ctx.fillStyle = speedIncreaseTimer <= 3 ? '#ff9e00' : '#4cc9f0';
+            ctx.fillRect(progressX, progressY, progressWidth * progress, progressHeight);
+            
+            // Border
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(progressX, progressY, progressWidth, progressHeight);
+        }
+        
+        // Draw danger zone
+        function drawDangerZone() {
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height - 10);
+            ctx.lineTo(canvas.width, canvas.height - 10);
+            
+            // Pulse effect for danger zone
+            const pulse = (Math.sin(Date.now() / 200) + 1) / 2;
+            const lineWidth = 3 + pulse * 2;
+            
+            ctx.strokeStyle = '#f72585';
+            ctx.lineWidth = lineWidth;
+            ctx.stroke();
+            
+            // Danger zone label
+            ctx.font = '12px Arial';
+            ctx.fillStyle = '#f72585';
+            ctx.textAlign = 'center';
+            ctx.fillText('DANGER ZONE', canvas.width/2, canvas.height - 20);
+        }
+        
+        // Game loop
+        function gameLoop() {
+            update();
+            draw();
+            
+            if (gameActive) {
+                gameLoopId = requestAnimationFrame(gameLoop);
+            }
+        }
+        
+        // Game over
+        function gameOver() {
+            gameActive = false;
+            clearInterval(speedTimerId);
+            cancelAnimationFrame(gameLoopId);
+            
+            // Show final score and speed level
+            finalScoreElement.textContent = score;
+            finalSpeedLevelElement.textContent = speedLevel;
+            
+            // Switch to game over screen
+            gameScreen.style.display = 'none';
+            gameOverScreen.style.display = 'flex';
+        }
+        
+        // Restart game
+        function restartGame() {
+            startGame();
+        }
+        
+        // Event listeners
+        startBtn.addEventListener('click', startGame);
+        restartBtn.addEventListener('click', restartGame);
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            if (gameActive) {
+                resizeCanvas();
+                updateGunPosition();
+            }
+        });
+        
+        // Initialize on load
+        window.addEventListener('load', () => {
+            // Show start screen by default
+            startScreen.style.display = 'flex';
+            gameScreen.style.display = 'none';
+            gameOverScreen.style.display = 'none';
+        });
+    </script>
+</body>
+</html>
