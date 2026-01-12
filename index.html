@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Air Defense Command System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .splash-screen {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            flex-direction: column;
+            text-align: center;
+            color: #fff;
+        }
+        
+        .splash-screen.hidden {
+            display: none;
+        }
+        
+        .splash-content {
+            animation: slideUp 0.8s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .splash-screen h1 {
+            font-size: 3em;
+            color: #ff0055;
+            margin-bottom: 20px;
+            letter-spacing: 3px;
+        }
+        
+        .splash-screen p {
+            font-size: 1.5em;
+            color: #00ff88;
+            margin: 30px 0;
+            max-width: 600px;
+            line-height: 1.6;
+        }
+        
+        .warning-text {
+            font-size: 1.3em;
+            color: #ffaa00;
+            margin: 40px 0;
+            letter-spacing: 2px;
+        }
+        
+        .launch-btn {
+            padding: 20px 60px;
+            font-size: 1.5em;
+            background: #ff0055;
+            color: #fff;
+            border: 2px solid #ff0055;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-top: 40px;
+            transition: all 0.3s;
+        }
+        
+        .launch-btn:hover {
+            transform: scale(1.05);
+        }
+        
+        .game-container {
+            display: none;
+            width: 100%;
+            max-width: 1400px;
+            height: 700px;
+            position: relative;
+            background: #87ceeb;
+            border: 2px solid #333;
+            overflow: hidden;
+        }
+        
+        .game-container.active {
+            display: block;
+        }
+        
+        #gameCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+            cursor: crosshair;
+        }
+        
+        .hud {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            width: 150px;
+            height: 150px;
+            border: 2px solid #00ff88;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 50%;
+            z-index: 100;
+        }
+        
+        #radarCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            border-radius: 50%;
+        }
+        
+        .warning-area {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            z-index: 150;
+            color: #ff6600;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        
+        .warning-area.hidden {
+            display: none;
+        }
+        
+        .game-over-screen {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2001;
+            flex-direction: column;
+            text-align: center;
+            color: #fff;
+        }
+        
+        .game-over-screen.show {
+            display: flex;
+        }
+        
+        .game-over-screen h2 {
+            font-size: 2.5em;
+            color: #ff0055;
+            margin-bottom: 20px;
+        }
+        
+        .game-over-screen p {
+            font-size: 1.3em;
+            color: #00ff88;
+            margin: 10px 0;
+        }
+        
+        .game-over-screen button {
+            padding: 15px 50px;
+            font-size: 1.2em;
+            background: #ff0055;
+            color: #fff;
+            border: 2px solid #ff0055;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 30px;
+            transition: all 0.3s;
+        }
+        
+        .game-over-screen button:hover {
+            transform: scale(1.05);
+        }
+
+        .controls-info {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border: 2px solid #00ff88;
+            color: #00ff88;
+            font-size: 0.9em;
+            z-index: 100;
+            border-radius: 5px;
+        }
+
+        .controls-info p {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="splash-screen" id="splashScreen">
+        <div class="splash-content">
+            <h1>EASTERN COMMAND</h1>
+            <p>Enemy has initiated air raid</p>
+            <p>Incoming aircraft detected</p>
+            <p>Activate defense systems</p>
+            <div class="warning-text">Multiple hostile signatures confirmed</div>
+            <button class="launch-btn" onclick="startDefense()">LAUNCH ATTACK</button>
+        </div>
+    </div>
+    
+    <div class="game-container" id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        <div class="hud">
+            <canvas id="radarCanvas"></canvas>
+        </div>
+        <div class="controls-info">
+            <p>MOUSE: Aim gun</p>
+            <p>SPACE: Fire</p>
+            <p>HOLD SPACE: Continuous fire</p>
+        </div>
+        <div class="warning-area hidden" id="warningArea"></div>
+    </div>
+    
+    <div class="game-over-screen" id="gameOverScreen">
+        <h2>DEFENSE COMPROMISED</h2>
+        <p id="finalStats"></p>
+        <button onclick="location.reload()">RESTART</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const radarCanvas = document.getElementById('radarCanvas');
+        const radarCtx = radarCanvas.getContext('2d');
+        const warningArea = document.getElementById('warningArea');
+        
+        canvas.width = 1400;
+        canvas.height = 700;
+        radarCanvas.width = 150;
+        radarCanvas.height = 150;
+        
+        let gameRunning = false;
+        let spacePressed = false;
+        let mouseX = canvas.width / 2;
+        let mouseY = canvas.height / 2;
+        
+        const gameState = {
+            defense: { x: 100, y: canvas.height - 80, angle: 0, health: 100 },
+            planes: [],
+            missiles: [],
+            enemyMissiles: [],
+            planeSpawnTimer: 0,
+            largeSpawnTimer: 0,
+            gameTime: 0,
+            planesDestroyed: 0,
+            penetrations: 0,
+            fireTimer: 0
+        };
+        
+        class Plane {
+            constructor(isLarge = false) {
+                this.x = canvas.width;
+                this.y = Math.random() * 250 + 100;
+                this.vx = isLarge ? -1.2 : -1.5;
+                this.vy = 0;
+                this.size = isLarge ? 40 : 25;
+                this.health = isLarge ? 15 : 5;
+                this.isLarge = isLarge;
+                this.firingTimer = 0;
+                this.maneuverTimer = 0;
+                this.targetY = this.y;
+                this.maneuverDir = Math.random() > 0.5 ? 1 : -1;
+            }
+            
+            update() {
+                this.x += this.vx;
+                
+                this.maneuverTimer++;
+                if (this.maneuverTimer > 40) {
+                    this.maneuverDir = Math.random() > 0.5 ? 1 : -1;
+                    this.maneuverTimer = 0;
+                }
+                
+                this.vy = this.maneuverDir * 1.5;
+                this.y += this.vy;
+                
+                this.y = Math.max(30, Math.min(canvas.height - 100, this.y));
+                
+                this.firingTimer++;
+                if (this.firingTimer > (this.isLarge ? 50 : 80)) {
+                    if (this.x < canvas.width - 200) {
+                        this.fire();
+                    }
+                    this.firingTimer = 0;
+                }
+            }
+            
+            fire() {
+                const dx = gameState.defense.x - this.x;
+                const dy = gameState.defense.y - this.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                if (dist > 0) {
+                    gameState.enemyMissiles.push({
+                        x: this.x,
+                        y: this.y,
+                        vx: (dx / dist) * 3,
+                        vy: (dy / dist) * 3,
+                        size: 6,
+                        life: 250
+                    });
+                }
+            }
+            
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                
+                if (this.isLarge) {
+                    ctx.fillStyle = '#cc0000';
+                    ctx.fillRect(-20, -15, 40, 30);
+                    ctx.fillStyle = '#dd0000';
+                    ctx.fillRect(-35, -5, 15, 10);
+                    ctx.fillRect(20, -5, 15, 10);
+                    ctx.fillStyle = '#ff0055';
+                    ctx.fillRect(-10, -8, 20, 16);
+                } else {
+                    ctx.fillStyle = '#ff0055';
+                    ctx.beginPath();
+                    ctx.moveTo(0, -10);
+                    ctx.lineTo(15, 10);
+                    ctx.lineTo(0, 5);
+                    ctx.lineTo(-15, 10);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.strokeStyle = '#ff88cc';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+                
+                ctx.restore();
+            }
+        }
+        
+        class Missile {
+            constructor(fromX, fromY, targetX, targetY) {
+                this.x = fromX;
+                this.y = fromY;
+                const dx = targetX - fromX;
+                const dy = targetY - fromY;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                this.vx = (dx / dist) * 8;
+                this.vy = (dy / dist) * 8;
+                this.size = 4;
+                this.life = 200;
+            }
+            
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.life--;
+            }
+            
+            draw() {
+                ctx.fillStyle = '#00ff88';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        
+        function drawDefense() {
+            ctx.save();
+            ctx.translate(gameState.defense.x, gameState.defense.y);
+            
+            // Base
+            ctx.fillStyle = '#00ff88';
+            ctx.fillRect(-18, -12, 36, 24);
+            ctx.beginPath();
+            ctx.arc(0, 0, 15, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.strokeStyle = '#00ffaa';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Gun barrel
+            ctx.rotate(gameState.defense.angle);
+            ctx.fillStyle = '#00ff88';
+            ctx.fillRect(0, -5, 50, 10);
+            ctx.beginPath();
+            ctx.arc(50, 0, 6, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.strokeStyle = '#00ffaa';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            ctx.restore();
+            
+            ctx.fillStyle = '#00ff88';
+            ctx.font = '12px Arial';
+            ctx.fillText('HP:' + gameState.defense.health, gameState.defense.x - 20, gameState.defense.y + 35);
+            ctx.fillText('P:' + gameState.penetrations + '/10', gameState.defense.x - 20, gameState.defense.y + 50);
+        }
+        
+        function drawGround() {
+            const groundHeight = 100;
+            ctx.fillStyle = '#8b6914';
+            ctx.fillRect(0, canvas.height - groundHeight, canvas.width, groundHeight);
+            ctx.fillStyle = '#a0741d';
+            ctx.fillRect(0, canvas.height - groundHeight, canvas.width, 3);
+        }
+        
+        function drawSky() {
+            const hour = (gameState.gameTime / 3600) % 24;
+            let skyColor;
+            
+            if (hour < 6) {
+                skyColor = 'rgb(10, 15, 30)';
+            } else if (hour < 8) {
+                const t = (hour - 6) / 2;
+                const r = Math.floor(10 + (135 - 10) * t);
+                const g = Math.floor(15 + (206 - 15) * t);
+                const b = Math.floor(30 + (235 - 30) * t);
+                skyColor = `rgb(${r}, ${g}, ${b})`;
+            } else if (hour < 18) {
+                skyColor = 'rgb(135, 206, 235)';
+            } else if (hour < 20) {
+                const t = (hour - 18) / 2;
+                const r = Math.floor(135 - 125 * t);
+                const g = Math.floor(206 - 190 * t);
+                const b = Math.floor(235 - 205 * t);
+                skyColor = `rgb(${r}, ${g}, ${b})`;
+            } else {
+                skyColor = 'rgb(10, 15, 30)';
+            }
+            
+            ctx.fillStyle = skyColor;
+            ctx.fillRect(0, 0, canvas.width, canvas.height - 100);
+        }
+        
+        function drawCelestials() {
+            const hour = (gameState.gameTime / 3600) % 24;
+            
+            if (hour >= 6 && hour < 18) {
+                ctx.fillStyle = '#ffff00';
+                ctx.beginPath();
+                ctx.arc(canvas.width - 100, 80, 35, 0, Math.PI * 2);
+                ctx.fill();
+            } else if ((hour >= 18 && hour < 24) || hour < 6) {
+                ctx.fillStyle = 'rgba(220, 220, 220, 0.7)';
+                ctx.beginPath();
+                ctx.arc(canvas.width - 100, 80, 30, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        
+        function drawRadar() {
+            radarCtx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+            radarCtx.fillRect(0, 0, radarCanvas.width, radarCanvas.height);
+            
+            radarCtx.strokeStyle = '#00ff88';
+            radarCtx.lineWidth = 1;
+            
+            for (let i = 1; i <= 3; i++) {
+                radarCtx.beginPath();
+                radarCtx.arc(75, 75, i * 20, 0, Math.PI * 2);
+                radarCtx.stroke();
+            }
+            
+            radarCtx.beginPath();
+            radarCtx.moveTo(75, 75);
+            radarCtx.lineTo(75, 25);
+            radarCtx.stroke();
+            
+            radarCtx.beginPath();
+            radarCtx.arc(75, 75, 60, -Math.PI / 3, Math.PI / 3);
+            radarCtx.stroke();
+            
+            radarCtx.fillStyle = '#00ff88';
+            radarCtx.beginPath();
+            radarCtx.arc(75, 75, 2, 0, Math.PI * 2);
+            radarCtx.fill();
+            
+            gameState.planes.forEach(plane => {
+                const dx = plane.x - gameState.defense.x;
+                const dy = plane.y - gameState.defense.y;
+                const angle = Math.atan2(dy, dx);
+                
+                if (angle >= -Math.PI / 3 && angle <= Math.PI / 3) {
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    const radarDist = Math.min(dist / 10, 60);
+                    const radarX = 75 + radarDist * Math.cos(angle);
+                    const radarY = 75 + radarDist * Math.sin(angle);
+                    
+                    radarCtx.fillStyle = plane.isLarge ? '#ff6600' : '#ff0055';
+                    radarCtx.beginPath();
+                    radarCtx.arc(radarX, radarY, 2, 0, Math.PI * 2);
+                    radarCtx.fill();
+                }
+            });
+        }
+        
+        function spawnPlanes() {
+            gameState.planeSpawnTimer++;
+            if (gameState.planeSpawnTimer > 300) {
+                gameState.planes.push(new Plane(false));
+                gameState.planeSpawnTimer = 0;
+                showWarning('Plane approaching');
+            }
+            
+            gameState.largeSpawnTimer++;
+            if (gameState.largeSpawnTimer > 1200 && gameState.gameTime > 600) {
+                gameState.planes.push(new Plane(true));
+                gameState.largeSpawnTimer = 0;
+                showWarning('Large aircraft detected');
+            }
+        }
+        
+        function fire() {
+            gameState.fireTimer++;
+            if (gameState.fireTimer > 5) {
+                const dx = mouseX - gameState.defense.x;
+                const dy = mouseY - gameState.defense.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                if (dist > 0) {
+                    const angle = Math.atan2(dy, dx);
+                    gameState.defense.angle = angle;
+                    gameState.missiles.push(new Missile(gameState.defense.x, gameState.defense.y, mouseX, mouseY));
+                    gameState.fireTimer = 0;
+                }
+            }
+        }
+        
+        function showWarning(text) {
+            warningArea.textContent = text;
+            warningArea.classList.remove('hidden');
+            setTimeout(() => {
+                warningArea.classList.add('hidden');
+            }, 1500);
+        }
+        
+        function updateGame() {
+            gameState.gameTime++;
+            
+            spawnPlanes();
+            
+            if (spacePressed) {
+                fire();
+            }
+            
+            gameState.planes.forEach(plane => plane.update());
+            
+            gameState.missiles.forEach((m, i) => {
+                m.update();
+                if (m.life <= 0 || m.x < 0 || m.x > canvas.width || m.y < 0 || m.y > canvas.height) {
+                    gameState.missiles.splice(i, 1);
+                    return;
+                }
+                
+                gameState.planes.forEach((plane, pIndex) => {
+                    const dx = plane.x - m.x;
+                    const dy = plane.y - m.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    
+                    if (dist < plane.size + m.size) {
+                        plane.health--;
+                        gameState.missiles.splice(i, 1);
+                        
+                        if (plane.health <= 0) {
+                            gameState.planes.splice(pIndex, 1);
+                            gameState.planesDestroyed++;
+                        }
+                    }
+                });
+            });
+            
+            gameState.enemyMissiles.forEach((m, i) => {
+                m.x += m.vx;
+                m.y += m.vy;
+                m.life--;
+                
+                if (m.life <= 0 || m.x < 0 || m.x > canvas.width || m.y < 0 || m.y > canvas.height) {
+                    gameState.enemyMissiles.splice(i, 1);
+                    return;
+                }
+                
+                const dx = gameState.defense.x - m.x;
+                const dy = gameState.defense.y - m.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                
+                if (dist < 15 + m.size) {
+                    gameState.defense.health -= 8;
+                    gameState.enemyMissiles.splice(i, 1);
+                    
+                    if (gameState.defense.health <= 0) {
+                        gameRunning = false;
+                    }
+                }
+            });
+            
+            gameState.planes = gameState.planes.filter(p => {
+                if (p.x < 0) {
+                    gameState.penetrations++;
+                    if (gameState.penetrations >= 10) {
+                        gameRunning = false;
+                    }
+                    return false;
+                }
+                return true;
+            });
+        }
+        
+        function drawGame() {
+            drawSky();
+            drawGround();
+            drawCelestials();
+            
+            gameState.planes.forEach(p => p.draw());
+            gameState.missiles.forEach(m => m.draw());
+            
+            gameState.enemyMissiles.forEach(m => {
+                ctx.fillStyle = '#ff6600';
+                ctx.beginPath();
+                ctx.arc(m.x, m.y, m.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            
+            drawDefense();
+            drawRadar();
+        }
+        
+        function gameLoop() {
+            if (gameRunning) {
+                updateGame();
+                
+                if (!gameRunning) {
+                    endGame();
+                }
+            }
+            drawGame();
+            requestAnimationFrame(gameLoop);
+        }
+        
+        function endGame() {
+            document.getElementById('gameOverScreen').classList.add('show');
+            document.getElementById('finalStats').textContent = 
+                'Planes destroyed: ' + gameState.planesDestroyed + 
+                ' | Penetrations: ' + gameState.penetrations + '/10';
+        }
+        
+        function startDefense() {
+            document.getElementById('splashScreen').classList.add('hidden');
+            document.getElementById('gameContainer').classList.add('active');
+            gameRunning = true;
+            showWarning('Invasion started');
+            gameLoop();
+        }
+        
+        // Mouse movement to aim gun
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.clientX - rect.left;
+            mouseY = e.clientY - rect.top;
+        });
+        
+        // Space key for continuous fire
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                spacePressed = true;
+            }
+        });
+        
+        document.addEventListener('keyup', (e) => {
+            if (e.code === 'Space') {
+                spacePressed = false;
+                gameState.fireTimer = 0;
+            }
+        });
+        
+        gameLoop();
+    </script>
+</body>
+</html>
