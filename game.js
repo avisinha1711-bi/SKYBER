@@ -66,7 +66,11 @@ const gameState = {
     spawnInterval: 300, // Changed from 600 (10 seconds) to 300 (5 seconds)
     wave: 1,
     currentPlane: null,
-    planeActive: false
+    planeActive: false,
+    // NEW: Track if we're waiting for new plane
+    waitingForNewPlane: false,
+    // NEW: Minimum time between planes
+    minPlaneInterval: 120 // 2 seconds
 };
 
 // Performance optimized constants
@@ -111,6 +115,7 @@ function initGame() {
     gameState.enemyMissiles = [];
     gameState.explosions = [];
     gameState.cyberExplosions = [];
+    gameState.waitingForNewPlane = false;
     
     updateHealthDisplay();
     updateStatsDisplay();
@@ -230,15 +235,20 @@ function updateEnemyDisplay() {
 }
 
 function updateSpawnTimer() {
-    const seconds = Math.ceil(gameState.spawnTimer / 60);
-    spawnTimer.textContent = seconds + 's';
-    
-    if (seconds <= 1) {
-        spawnTimer.style.color = '#ff4444';
-    } else if (seconds <= 3) {
-        spawnTimer.style.color = '#ffff44';
+    if (!gameState.currentPlane && !gameState.waitingForNewPlane) {
+        const seconds = Math.ceil(gameState.spawnTimer / 60);
+        spawnTimer.textContent = seconds + 's';
+        
+        if (seconds <= 1) {
+            spawnTimer.style.color = '#ff4444';
+        } else if (seconds <= 3) {
+            spawnTimer.style.color = '#ffff44';
+        } else {
+            spawnTimer.style.color = '#8a8aff';
+        }
     } else {
-        spawnTimer.style.color = '#8a8aff';
+        spawnTimer.textContent = 'ENGAGED';
+        spawnTimer.style.color = '#ff4444';
     }
 }
 
@@ -643,13 +653,18 @@ class Explosion {
 }
 
 function spawnEliteFighter() {
-    if (!gameState.currentPlane && gameState.spawnTimer <= 0) {
+    // Don't spawn if we're waiting or already have a plane
+    if (gameState.waitingForNewPlane || gameState.currentPlane) return;
+    
+    // Check if spawn timer has reached 0
+    if (gameState.spawnTimer <= 0) {
         gameState.currentPlane = new EliteFighter();
         gameState.planes = [gameState.currentPlane];
         gameState.planeActive = true;
         gameState.wave++;
         gameState.spawnTimer = gameState.spawnInterval;
         showNotification(`WAVE ${gameState.wave}`, 'warning');
+        gameState.waitingForNewPlane = false;
     }
 }
 
@@ -879,8 +894,10 @@ function updateGame() {
         updateSpawnTimer();
     }
     
-    // Spawn new fighter every 5 seconds
-    spawnEliteFighter();
+    // Spawn new fighter if conditions are met
+    if (!gameState.currentPlane && !gameState.waitingForNewPlane) {
+        spawnEliteFighter();
+    }
     
     // Update day/night cycle
     gameState.dayNightCycle = (gameState.dayNightCycle + 0.00003) % 1;
@@ -914,20 +931,39 @@ function updateGame() {
             showNotification('TARGET DESTROYED! +400', 'cyber');
             gameState.planesDestroyed++;
             gameState.score += ELITE_FIGHTER.scoreValue;
+            
+            // Reset for new plane
             gameState.currentPlane = null;
             gameState.planes = [];
-            gameState.spawnTimer = gameState.spawnInterval;
+            
+            // Set a waiting period before next spawn
+            gameState.waitingForNewPlane = true;
+            gameState.spawnTimer = gameState.minPlaneInterval;
+            
             updateStatsDisplay();
             updateScoreDisplay();
             updateEnemyDisplay();
         }
         
-        // Check if fighter leaves the screen (game continues)
-        if (gameState.currentPlane.x < -150) {
+        // Check if fighter leaves the screen (escapes)
+        if (gameState.currentPlane && gameState.currentPlane.x < -150) {
+            showNotification('TARGET ESCAPED!', 'warning');
             gameState.currentPlane = null;
             gameState.planes = [];
+            gameState.waitingForNewPlane = true;
             gameState.spawnTimer = gameState.spawnInterval;
             updateEnemyDisplay();
+        }
+    } else if (gameState.waitingForNewPlane) {
+        // Count down waiting period
+        if (gameState.spawnTimer > 0) {
+            gameState.spawnTimer--;
+            updateSpawnTimer();
+        } else {
+            // Waiting period over, ready for new plane
+            gameState.waitingForNewPlane = false;
+            gameState.spawnTimer = gameState.spawnInterval;
+            updateSpawnTimer();
         }
     }
     
