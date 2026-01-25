@@ -79,6 +79,27 @@ body {
     border-radius: 0 6px 6px 0;
 }
 
+.disclaimer {
+    margin: 15px 0;
+    padding: 10px;
+    background: rgba(255, 138, 138, 0.1);
+    border: 1px solid #ff8a8a;
+    border-radius: 4px;
+    animation: pulse 2s infinite;
+}
+
+.disclaimer p {
+    color: #ff8a8a;
+    font-size: 0.85em;
+    margin: 0;
+}
+
+@keyframes pulse {
+    0% { opacity: 0.7; }
+    50% { opacity: 1; }
+    100% { opacity: 0.7; }
+}
+
 .launch-btn {
     padding: 15px 40px;
     font-size: 1.1em;
@@ -89,7 +110,7 @@ body {
     cursor: pointer;
     font-weight: 500;
     letter-spacing: 1.2px;
-    margin-top: 30px;
+    margin-top: 20px;
     transition: all 0.3s;
     background: rgba(138, 138, 255, 0.15);
     text-transform: uppercase;
@@ -127,6 +148,7 @@ body {
     height: 100%;
     display: block;
     cursor: crosshair;
+    filter: contrast(1.1) saturate(1.1);
 }
 
 .hud {
@@ -343,6 +365,7 @@ body {
     font-size: 1em;
     color: #a0a0ff;
     margin: 10px 0;
+    line-height: 1.4;
 }
 
 .stats-grid {
@@ -531,21 +554,6 @@ body {
     letter-spacing: 0.8px;
 }
 
-.enemy-health-bar {
-    width: 100%;
-    height: 8px;
-    background: #222;
-    border-radius: 4px;
-    overflow: hidden;
-    margin: 8px 0;
-}
-
-.enemy-health-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #ff4444, #ff8888);
-    transition: width 0.3s;
-}
-
 .spawn-timer {
     position: absolute;
     top: 120px;
@@ -566,6 +574,35 @@ body {
     font-size: 1.1em;
     color: #e0e0e0;
     font-weight: 600;
+}
+
+.wave-display {
+    position: absolute;
+    bottom: 270px;
+    right: 15px;
+    background: rgba(10, 10, 15, 0.95);
+    padding: 8px 12px;
+    border: 1px solid #333;
+    border-radius: 6px;
+    font-size: 0.85em;
+    color: #8a8aff;
+    backdrop-filter: blur(5px);
+    font-weight: 500;
+    text-align: center;
+    min-width: 120px;
+}
+
+.wave-label {
+    font-size: 0.75em;
+    color: #8a8aff;
+    margin-bottom: 4px;
+}
+
+.wave-value {
+    font-size: 1.3em;
+    color: #e0e0e0;
+    font-weight: 600;
+    text-shadow: 0 0 8px rgba(138, 138, 255, 0.3);
 }
 
 @media (max-width: 1024px) {
@@ -618,6 +655,10 @@ body {
     .time-display, .score-display {
         top: 140px;
     }
+    
+    .wave-display {
+        bottom: 250px;
+    }
 }
 
 @media (max-height: 600px) {
@@ -637,5 +678,9 @@ body {
         bottom: 70px;
         width: 110px;
         height: 110px;
+    }
+    
+    .wave-display {
+        bottom: 230px;
     }
 }
